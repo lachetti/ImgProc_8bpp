@@ -717,10 +717,9 @@ void imgProc::floodFill8() {
         }
     }
 }
-void imgProc::floodFill8_clear(int bufferSize) {
+void imgProc::floodFill8_clear(int eps) {
     // ===  === //
     // ------------------------------------------------------------------------------------------------------------ //
-    int clasterCount = 0;
     int dx8[8] = {-1, 0, 1, 1, 1, 0, -1, -1};
     int dy8[8] = {1, 1, 1, 0, -1, -1, -1, 0};
     QColor oldColor(0,0,0);
@@ -728,22 +727,24 @@ void imgProc::floodFill8_clear(int bufferSize) {
     QPoint currentPoint;
 
     result = source;
+    areas.clear();
 
     QVector<QPoint> stack;
-    QVector<QPoint> reserve;
+    QVector<QPoint> buffer;
     for (int r = 0; r<result.width(); r++) {
         for (int c = 0; c<result.height(); c++) {
+
             if (result.pixelColor(r, c) == oldColor) {
                 stack.push_back(QPoint(r, c));
                 newColor = QColor(rand() % 256, rand() % 256, rand() % 256);
+
                 while (stack.size() > 0) {
                     currentPoint = stack.last();
                     stack.pop_back();
-                    if (reserve.size() < bufferSize) {
-                        reserve.push_back(currentPoint);
-                    } else {
-                        result.setPixelColor(currentPoint, QColor(newColor));
-                    }
+
+                    buffer.push_back(currentPoint);
+                    result.setPixelColor(currentPoint, QColor(newColor));
+
                     for (int neib=0; neib<8; neib++) {
                         int nX = currentPoint.x() + dx8[neib];
                         int nY = currentPoint.y() + dy8[neib];
@@ -752,19 +753,11 @@ void imgProc::floodFill8_clear(int bufferSize) {
                             stack.push_back(QPoint(nX, nY));
                         }
                     }
+
                 }
-                if (reserve.size() < bufferSize) {
-                    while (reserve.size() > 0) {
-                        result.setPixelColor(reserve.last(), QColor(255,255,255));
-                        reserve.pop_back();
-                    }
-                } else {
-                    clasterCount++;
-                    while (reserve.size() > 0) {
-                        result.setPixelColor(reserve.last(), QColor(newColor));
-                        reserve.pop_back();
-                    }
-                }
+                areas.push_back(Area(buffer, newColor));
+                buffer.clear();
+
             }
         }
     }
